@@ -1,0 +1,114 @@
+---
+- name: Configure Wordpress
+  hosts: client
+  become: true
+  tasks:
+    - name: Add Php repo
+      ansible.builtin.apt_repository:
+        repo: ppa:ondrej/php
+        state: present
+
+    - name: Update Ubuntu OS
+      ansible.builtin.apt:
+        state: latest
+        update_cache: yes
+
+    - name: Install latest version of Nginx and Mariadb server
+      ansible.builtin.apt:
+        name:
+          - nginx
+          - mariadb-server
+        state: present
+
+    - name: Php dependacies
+      ansible.builtin.apt:
+        name:
+          - php7.4
+          - php7.4-cli
+          - php7.4-fpm
+          - php7.4-mysql
+          - php7.4-json
+          - php7.4-opcache
+          - php7.4-mbstring
+          - php7.4-xml
+          - php7.4-gd
+          - php7.4-curl
+        state: present
+
+    - name: Install pip package
+      package:
+        name: python3-pip
+        state: present
+
+    - name: Install PyMySQL module
+      pip:
+        name: pymysql
+        state: present
+
+    - name: Create database user with name 'wpuser'
+      community.mysql.mysql_user:
+        name: wpuser
+        password: Pssword123
+        priv: '*.*:ALL'
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+    - name: Create new database 'wordpress_db'
+      community.mysql.mysql_db:
+        name: wordpress_db
+        login_user: wpuser
+        login_password: Pssword123
+        state: present
+
+    - name: Download wordpress
+      ansible.builtin.get_url:
+        url: https://en-gb.wordpress.org/latest-en_GB.tar.gz
+        dest: /var/www/
+
+    - name: Unarchive wordpress zip file
+      ansible.builtin.unarchive:
+        src: "/var/www/wordpress-6.2.2-en_GB.tar.gz"
+        dest: /var/www/
+        remote_src: true
+
+    - name: Create document root
+      ansible.builtin.file:
+        path: /var/www/wordpress
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '755'
+        recurse: true
+
+    - name: Configure wordpress
+      ansible.builtin.template:
+        src: wp-config.php.j2
+        dest: /var/www/wordpress/wp-config.php
+
+    - name: Configure nginx
+      ansible.builtin.template:
+        src: wordpress.conf.j2
+        dest: /etc/nginx/sites-available/wordpress.conf
+
+    - name: Remove file (delete file)
+      ansible.builtin.file:
+        path: /etc/nginx/sites-available/default
+        state: absent
+
+    - name: Remove file (delete file)
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Create a symbolic link
+      ansible.builtin.file:
+        src: /etc/nginx/sites-available/wordpress.conf
+        dest: /etc/nginx/sites-enabled/wordpress.conf
+        owner: root
+        group: root
+        state: link
+
+    - name: Restart nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
