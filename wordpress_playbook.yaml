@@ -47,17 +47,17 @@
 
     - name: Create database user with name 'wpuser'
       community.mysql.mysql_user:
-        name: wpuser
-        password: Pssword123
+        name: "{{ dbuser }}"
+        password: "{{ dbpass }}"
         priv: '*.*:ALL'
         state: present
         login_unix_socket: /var/run/mysqld/mysqld.sock
 
     - name: Create new database 'wordpress_db'
       community.mysql.mysql_db:
-        name: wordpress_db
-        login_user: wpuser
-        login_password: Pssword123
+        name: "{{ dbname }}"
+        login_user: "{{ dbuser }}"
+        login_password: "{{ dbpass }}"
         state: present
 
     - name: Download wordpress
