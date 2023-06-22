@@ -1,6 +1,6 @@
 ---
 - name: Configure Wordpress
-  hosts: client
+  hosts: ubuntu
   become: true
   tasks:
     - name: Add Php repo
@@ -20,20 +20,11 @@
           - mariadb-server
         state: present
 
-    - name: Php dependacies
+    - name: Install php dependencies
       ansible.builtin.apt:
-        name:
-          - php7.4
-          - php7.4-cli
-          - php7.4-fpm
-          - php7.4-mysql
-          - php7.4-json
-          - php7.4-opcache
-          - php7.4-mbstring
-          - php7.4-xml
-          - php7.4-gd
-          - php7.4-curl
+        name: "{{ item }}"
         state: present
+      loop: "{{ php_dependencies }}"
 
     - name: Install pip package
       package:
@@ -45,7 +36,7 @@
         name: pymysql
         state: present
 
-    - name: Create database user with name 'wpuser'
+    - name: Create database user
       community.mysql.mysql_user:
         name: "{{ dbuser }}"
         password: "{{ dbpass }}"
@@ -53,7 +44,7 @@
         state: present
         login_unix_socket: /var/run/mysqld/mysqld.sock
 
-    - name: Create new database 'wordpress_db'
+    - name: Create new database
       community.mysql.mysql_db:
         name: "{{ dbname }}"
         login_user: "{{ dbuser }}"
@@ -92,13 +83,12 @@
 
     - name: Remove file (delete file)
       ansible.builtin.file:
-        path: /etc/nginx/sites-available/default
+        path: "{{ item }}"
         state: absent
-
-    - name: Remove file (delete file)
-      ansible.builtin.file:
-        path: /etc/nginx/sites-enabled/default
-        state: absent
+      loop:
+        - /etc/nginx/sites-available/default
+        - /etc/nginx/sites-enabled/default
+        - /var/www/wordpress-6.2.2-en_GB.tar.gz
 
     - name: Create a symbolic link
       ansible.builtin.file:
