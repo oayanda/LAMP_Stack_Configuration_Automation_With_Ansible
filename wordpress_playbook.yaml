@@ -80,6 +80,8 @@
       ansible.builtin.template:
         src: wordpress.conf.j2
         dest: /etc/nginx/sites-available/wordpress.conf
+      notify:
+        - Restart nginx
 
     - name: Remove file (delete file)
       ansible.builtin.file:
@@ -97,7 +99,10 @@
         owner: root
         group: root
         state: link
+      notify:
+        - Restart nginx
 
+  handlers:
     - name: Restart nginx
       ansible.builtin.service:
         name: nginx
